@@ -2,6 +2,7 @@ blueprint:
   name: Motion Lights
   description: Turn on and off lights, based on a lot ofconditionss
   domain: automation
+
   input:
     motion_sensor:
       name: Motion Sensor
@@ -44,12 +45,13 @@ blueprint:
           filter:
             - domain: binary_sensor
             - domain: input_boolean
-              
+mode: restart  
 variables:
   night: !input night
   motion: !input motion_sensor
   lights: !input lights
   door: !input door
+  off_delay: !input off_delay
 
 trigger:
   - platform: state
@@ -91,6 +93,12 @@ action:
         - condition: template
           value_template: "{{ trigger.id == 'motion_off' and (door == [] or states[door].state == 'on') }}" 
       sequence:
+        - service: light.turn_on
+          target: !input lights
+          data:
+            brightness_pct: 10
+        - delay:
+            minutes: 1
         - service: light.turn_off
           target: !input lights
     - conditions:
