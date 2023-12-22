@@ -89,6 +89,7 @@ action:
   - choose:
     - conditions:
         - condition: template
+          alias: "motion on"
           value_template: "{{ trigger.id == 'motion_on' and (night_enabled != true or states.input_boolean.night.state == 'on') and door == true }}"
       sequence:
         - service: light.turn_on
@@ -97,6 +98,7 @@ action:
             brightness_pct: "{{ brightness }}"
     - conditions:
         - condition: template
+          alias: "night on"
           value_template: "{{ trigger.id == 'night' and trigger.to_state.state == 'on' and states(motion) == 'on' and night_enabled == true and door == true }}"
       sequence:
         - service: light.turn_on
@@ -105,6 +107,7 @@ action:
             brightness_pct: "{{ brightness }}"
     - conditions:
         - condition: template
+          alias: "motion half off"
           value_template: "{{ trigger.id == 'motion_half' and door == true }}" 
       sequence:
         - service: light.turn_on
@@ -113,6 +116,7 @@ action:
             brightness_pct: "{{ brightness / 10 }}"
     - conditions:
         - condition: template
+          alias: "motion off"
           value_template: "{{ trigger.id == 'motion_off' and door == true }}" 
       sequence:
         - service: light.turn_off
@@ -120,6 +124,7 @@ action:
 
     - conditions:
         - condition: template
+          alias: "night off"
           value_template: "{{ trigger.id == 'night' and trigger.to_state.state == 'off' and night_enabled == true }}" 
       sequence:
         - service: light.turn_off
