@@ -1,0 +1,66 @@
+blueprint:
+  name: Motion Lights
+  description: Turn on and off lights, based on a lot ofconditionss
+  domain: automation
+  input:
+    motion_sensor:
+      name: Motion Sensor
+      description: Movement detection
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+            - device_class: motion
+    lights:
+      name: Lights
+      description: The set of lights to turn on and off
+      selector:
+        target:
+          entity:
+            - domain: light
+    off_delay:
+      name: Off delay
+      description: Delay in which to turn off the light after the motion is off
+      selector:
+        number:
+          min: 0
+          max: 60
+          unit_of_measurement: "minutes"
+      default: 0
+    door:
+      name: Door
+      description: If the door is closed, the light will not turn on / off
+      default: ''
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+
+trigger:
+  - platform: state
+    entity_id: !input motion_sensor
+    from: "off"
+    to: "on"
+  - platform: state
+    entity_id: !input motion_sensor
+    from: "on"
+    to: "off"
+    for:
+      minutes: !input off_delay
+
+variables:
+  door: !input door
+
+condition:
+  - alias: "Door close"
+    condition: template
+    value_template: "{{ states(door) != 'off' }}"
+
+action:
+  - service: >
+      {% if trigger.to_state.state == "on" %}
+        light.turn_on
+      {% else %}
+        light.turn_off
+      {% endif %}
+    target: !input lights
