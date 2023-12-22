@@ -35,32 +35,49 @@ blueprint:
         entity:
           filter:
             - domain: binary_sensor
+    night:
+      name: Night
+      description: Do not turn on lights during the day
+      default: ''
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+            - domain: input_boolean
+              
+variables:
+  night: !input night
+  motion: !input motion_sensor
+  lights: !input lights
 
 trigger:
   - platform: state
     entity_id: !input motion_sensor
     from: "off"
     to: "on"
+    id: "motion_on"  
   - platform: state
     entity_id: !input motion_sensor
     from: "on"
     to: "off"
     for:
       minutes: !input off_delay
-
-variables:
-  door: !input door
-
-condition:
-  - alias: "Door close"
-    condition: template
-    value_template: "{{ states(door) != 'off' }}"
+    id: "motion_off"
+  - platform: template
+    value_template: "{{ is_state(motion, 'on') or is_state(motion, 'off') }}"
+    id: "night"
 
 action:
-  - service: >
-      {% if trigger.to_state.state == "on" %}
-        light.turn_on
-      {% else %}
-        light.turn_off
-      {% endif %}
-    target: !input lights
+  - choose:
+    - conditions:
+        - condition: template
+          value_template: "{{ trigger.id == 'motion_on' and states(night) != 'off' and states(door) != 'off' or trigger.id == 'night' and trigger.to_state.state == 'on' and states(motion) == 'on' }}"
+      sequence:
+        - service: light.turn_on
+          target: !input lights
+    - conditions:
+        - condition: template
+          value_template: "{{ trigger.id == 'motion_off' and states(door) != 'off' or trigger.id == 'night' and trigger.to_state.state == 'off' }}" 
+      sequence:
+        - service: light.turn_off
+          target: !input lights
