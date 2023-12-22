@@ -51,7 +51,7 @@ variables:
   door: "{{ door_entity == [] or states[door_entity].state == 'on' }}"
   off_delay: !input off_delay
   brightness: >
-    {% if states.input_boolean.sleep.state == 'off' %}
+    {% if states.input_boolean.sleep.state == 'off' or states.input_boolean.guest == 'on' %}
       100
     {% else %}
       10
