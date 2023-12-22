@@ -48,7 +48,7 @@ variables:
   motion: !input motion_sensor
   lights: !input lights
   door_entity: !input door
-  door: "{{ door_entity == [] or states[door_entity].state == 'on' }}"
+  door: "{{ door_entity == [] or states(door_entity) == 'on' }}"
   brightness: >
     {% if states.input_boolean.sleep.state == 'off' or states.input_boolean.guest == 'on' %}
       100
@@ -90,7 +90,7 @@ action:
     - conditions:
         - condition: template
           alias: "motion on"
-          value_template: "{{ trigger.id == 'motion_on' and (night_enabled != true or states.input_boolean.night.state == 'on') and door == true }}"
+          value_template: "{{ trigger.id == 'motion_on' and (night_enabled != true or states('input_boolean.night') == 'on') and door == true }}"
       sequence:
         - service: light.turn_on
           target: !input lights
