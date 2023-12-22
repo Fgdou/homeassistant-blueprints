@@ -49,13 +49,15 @@ variables:
   lights: !input lights
   door_entity: !input door
   door: "{{ door_entity == [] or states[door_entity].state == 'on' }}"
-  off_delay: !input off_delay
   brightness: >
     {% if states.input_boolean.sleep.state == 'off' or states.input_boolean.guest == 'on' %}
       100
     {% else %}
       10
     {% endif %}
+
+trigger_variables:
+  off_delay: !input off_delay
 
 trigger:
   - platform: state
@@ -69,7 +71,15 @@ trigger:
     to: "off"
     for:
       minutes: !input off_delay
+    id: "motion_half"
+  - platform: state
+    entity_id: !input motion_sensor
+    from: "on"
+    to: "off"
+    for:
+      minutes: "{{ off_delay + 1 }}"
     id: "motion_off"
+
   - platform: state
     id: "night"
     entity_id: input_boolean.night
@@ -95,16 +105,19 @@ action:
             brightness_pct: "{{ brightness }}"
     - conditions:
         - condition: template
-          value_template: "{{ trigger.id == 'motion_off' and door == true }}" 
+          value_template: "{{ trigger.id == 'motion_half' and door == true }}" 
       sequence:
         - service: light.turn_on
           target: !input lights
           data:
             brightness_pct: "{{ brightness / 10 }}"
-        - delay:
-            minutes: 1
+    - conditions:
+        - condition: template
+          value_template: "{{ trigger.id == 'motion_off' and door == true }}" 
+      sequence:
         - service: light.turn_off
           target: !input lights
+
     - conditions:
         - condition: template
           value_template: "{{ trigger.id == 'night' and trigger.to_state.state == 'off' and night_enabled == true }}" 
