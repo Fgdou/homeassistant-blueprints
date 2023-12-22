@@ -49,6 +49,7 @@ variables:
   night: !input night
   motion: !input motion_sensor
   lights: !input lights
+  door: !input door
 
 trigger:
   - platform: state
@@ -64,20 +65,36 @@ trigger:
       minutes: !input off_delay
     id: "motion_off"
   - platform: template
-    value_template: "{{ is_state(motion, 'on') or is_state(motion, 'off') }}"
+    value_template: "{{ states(night) == 'on' or states(night) == 'off' }}"
     id: "night"
 
 action:
   - choose:
     - conditions:
         - condition: template
-          value_template: "{{ trigger.id == 'motion_on' and states(night) != 'off' and states(door) != 'off' or trigger.id == 'night' and trigger.to_state.state == 'on' and states(motion) == 'on' }}"
+          value_template: "{{ trigger.id == 'motion_on' and states(night) != 'off' and states(door) != 'off' }}"
       sequence:
         - service: light.turn_on
           target: !input lights
+          data:
+            brightness_pct: 100
     - conditions:
         - condition: template
-          value_template: "{{ trigger.id == 'motion_off' and states(door) != 'off' or trigger.id == 'night' and trigger.to_state.state == 'off' }}" 
+          value_template: "{{ trigger.id == 'night' and trigger.to_state.state == 'on' and states(motion) == 'on' }}"
+      sequence:
+        - service: light.turn_on
+          target: !input lights
+          data:
+            brightness_pct: 100
+    - conditions:
+        - condition: template
+          value_template: "{{ trigger.id == 'motion_off' and states(door) != 'off' }}" 
+      sequence:
+        - service: light.turn_off
+          target: !input lights
+    - conditions:
+        - condition: template
+          value_template: "{{ trigger.id == 'night' and trigger.to_state.state == 'off' }}" 
       sequence:
         - service: light.turn_off
           target: !input lights
