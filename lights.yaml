@@ -30,7 +30,7 @@ blueprint:
     door:
       name: Door
       description: If the door is closed, the light will not turn on / off
-      default: ''
+      default: [] 
       selector:
         entity:
           filter:
@@ -38,7 +38,7 @@ blueprint:
     night:
       name: Night
       description: Do not turn on lights during the day
-      default: ''
+      default: []
       selector:
         entity:
           filter:
@@ -64,15 +64,16 @@ trigger:
     for:
       minutes: !input off_delay
     id: "motion_off"
-  - platform: template
-    value_template: "{{ states(night) == 'on' or states(night) == 'off' }}"
+  - platform: state
     id: "night"
+    entity_id: !input night
+
 
 action:
   - choose:
     - conditions:
         - condition: template
-          value_template: "{{ trigger.id == 'motion_on' and states(night) != 'off' and states(door) != 'off' }}"
+          value_template: "{{ trigger.id == 'motion_on' and (night == [] or states[night].state == 'on') and (door == [] or states[door].state == 'on') }}"
       sequence:
         - service: light.turn_on
           target: !input lights
@@ -88,7 +89,7 @@ action:
             brightness_pct: 100
     - conditions:
         - condition: template
-          value_template: "{{ trigger.id == 'motion_off' and states(door) != 'off' }}" 
+          value_template: "{{ trigger.id == 'motion_off' and (door == [] or states[door].state == 'on') }}" 
       sequence:
         - service: light.turn_off
           target: !input lights
