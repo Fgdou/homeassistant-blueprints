@@ -108,7 +108,7 @@ action:
     - conditions:
         - condition: template
           alias: "motion half off"
-          value_template: "{{ trigger.id == 'motion_half' and door == true }}" 
+          value_template: "{{ trigger.id == 'motion_half' and door == true and (night_enabled != true or states('input_boolean.night') == 'on') }}" 
       sequence:
         - service: light.turn_on
           target: !input lights
