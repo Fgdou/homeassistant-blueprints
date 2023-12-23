@@ -42,6 +42,14 @@ blueprint:
       default: off
       selector:
         boolean:
+    tv:
+      name: Tv
+      description: A Tv than control the lights. When the media runs, the lights turns off. When the media pause, the light turns on.
+      default: []
+      selector:
+        entity:
+          filter:
+            - domain: media_player
 mode: restart  
 variables:
   night_enabled: !input night
@@ -56,6 +64,10 @@ variables:
     {% else %}
       10
     {% endif %}
+  tv_entity: !input tv
+  tv_off: "{{ tv_entity == [] or states(tv_entity) == 'unavailable' }}"
+  tv_pause: "{{ tv_entity != [] and states(tv_entity) != 'unavailable' and states(tv_entity) != 'playing' }}"
+  tv_playing: "{{ tv_entity != [] and states(tv_entity) == 'playing' }}"
 
 trigger_variables:
   off_delay: !input off_delay
@@ -84,6 +96,9 @@ trigger:
   - platform: state
     id: "night"
     entity_id: input_boolean.night
+  - platform: state
+    entity_id: !input tv
+    id: "tv"
 
 
 action:
@@ -91,7 +106,7 @@ action:
     - conditions:
         - condition: template
           alias: "motion on"
-          value_template: "{{ trigger.id == 'motion_on' and night == true and door == true }}"
+          value_template: "{{ trigger.id == 'motion_on' and night == true and door == true and tv_off == true }}"
       sequence:
         - service: light.turn_on
           target: !input lights
@@ -100,7 +115,7 @@ action:
     - conditions:
         - condition: template
           alias: "night on"
-          value_template: "{{ trigger.id == 'night' and trigger.to_state.state == 'on' and states(motion) == 'on' and night_enabled == true and door == true }}"
+          value_template: "{{ trigger.id == 'night' and trigger.to_state.state == 'on' and states(motion) == 'on' and night_enabled == true and door == true and tv_off == true }}"
       sequence:
         - service: light.turn_on
           target: !input lights
@@ -109,7 +124,7 @@ action:
     - conditions:
         - condition: template
           alias: "motion half off"
-          value_template: "{{ trigger.id == 'motion_half' and door == true and night == true }}" 
+          value_template: "{{ trigger.id == 'motion_half' and door == true and night == true and tv_off == true }}" 
       sequence:
         - service: light.turn_on
           target: !input lights
@@ -118,7 +133,7 @@ action:
     - conditions:
         - condition: template
           alias: "motion off"
-          value_template: "{{ trigger.id == 'motion_off' and door == true }}" 
+          value_template: "{{ trigger.id == 'motion_off' and door == true and tv_off == true }}" 
       sequence:
         - service: light.turn_off
           target: !input lights
@@ -130,3 +145,29 @@ action:
       sequence:
         - service: light.turn_off
           target: !input lights
+
+    - conditions:
+        - condition: template
+          alias: "tv on"
+          value_template: "{{ (trigger.id == 'tv' or trigger.id == 'night') and tv_pause == true and night == true }}"
+      sequence:
+        - service: light.turn_on
+          target: !input lights
+          data:
+            brightness_pct: "{{ brightness / 10 }}"
+    - conditions:
+        - condition: template
+          alias: "tv playing"
+          value_template: "{{ trigger.id == 'tv' and tv_playing == true }}"
+      sequence:
+        - service: light.turn_off
+          target: !input lights
+    - conditions:
+        - condition: template
+          alias: "tv off"
+          value_template: "{{ trigger.id == 'tv' and tv_off == true and night == true }}"
+      sequence:
+        - service: light.turn_on
+          target: !input lights
+          data:
+            brightness_pct: "{{ brightness }}"
