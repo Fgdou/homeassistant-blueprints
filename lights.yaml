@@ -45,6 +45,7 @@ blueprint:
 mode: restart  
 variables:
   night_enabled: !input night
+  night: "{{ night_enabled != true or states('input_boolean.night') == 'on' }}"
   motion: !input motion_sensor
   lights: !input lights
   door_entity: !input door
@@ -90,7 +91,7 @@ action:
     - conditions:
         - condition: template
           alias: "motion on"
-          value_template: "{{ trigger.id == 'motion_on' and (night_enabled != true or states('input_boolean.night') == 'on') and door == true }}"
+          value_template: "{{ trigger.id == 'motion_on' and night == true and door == true }}"
       sequence:
         - service: light.turn_on
           target: !input lights
@@ -108,7 +109,7 @@ action:
     - conditions:
         - condition: template
           alias: "motion half off"
-          value_template: "{{ trigger.id == 'motion_half' and door == true and (night_enabled != true or states('input_boolean.night') == 'on') }}" 
+          value_template: "{{ trigger.id == 'motion_half' and door == true and night == true }}" 
       sequence:
         - service: light.turn_on
           target: !input lights
