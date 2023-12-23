@@ -50,6 +50,23 @@ blueprint:
         entity:
           filter:
             - domain: media_player
+    button_on:
+      name: Button On
+      default: []
+      description: A button to turn on the lights
+      selector:
+        entity:
+          filter:
+            - domain: input_button
+    button_off:
+      name: Button Off
+      default: []
+      description: A button to turn off the lights
+      selector:
+        entity:
+          filter:
+            - domain: input_button
+
 mode: restart  
 variables:
   night_enabled: !input night
@@ -99,7 +116,9 @@ trigger:
   - platform: state
     entity_id: !input tv
     id: "tv"
-
+  - platform: state
+    entity_id: !input button_on
+    id: "button_on"
 
 action:
   - choose:
@@ -171,3 +190,19 @@ action:
           target: !input lights
           data:
             brightness_pct: "{{ brightness }}"
+    - conditions:
+        - condition: template
+          alias: "button on"
+          value_template: "{{ trigger.id == 'button_on' }}"
+      sequence:
+        - service: light.turn_on
+          target: !input lights
+          data:
+            brightness_pct: "{{ brightness }}"
+    - conditions:
+        - condition: template
+          alias: "button off"
+          value_template: "{{ trigger.id == 'button_off' }}"
+      sequence:
+        - service: light.turn_off
+          target: !input lights
