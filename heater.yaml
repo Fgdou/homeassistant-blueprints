@@ -1,0 +1,69 @@
+blueprint:
+  name: Heater
+  description: Turn on and off a heater based on presence and temperature
+  domain: automation
+  input:
+    heater:
+      name: Header
+      selector:
+        entity:
+          domain: switch
+    toggle:
+      name: Toggle
+      description: When to turn on or off the automation
+      selector:
+        entity:
+          domain: input_boolean
+    target:
+      name: Target temperature
+      selector:
+        number:
+          min: 10
+          max: 30
+    presence:
+      name: Presence
+      selector:
+        entity:
+          domain: input_boolean
+    temperature:
+      name: Temperature
+      selector:
+        entity:
+          domain: sensor
+variables:
+  target: !input target
+  toggle: !input toggle
+  presence: !input presence
+  temperature: !input temperature
+trigger:
+  - platform: state
+    entity_id: !input temperature
+  - platform: state
+    entity_id: !input presence
+    from: 'on'
+    to: 'off'
+    id: 'leave'
+  - platform: state
+    entity_id: !input toggle
+action: 
+  - if:
+      - condition: template
+        value_template: "{{ trigger.id == 'leave' }}"
+    then:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: !input toggle
+  - if:
+      - condition: template
+        value_template: "{{ states(temperature) | float <= target | float - 0.5 and states(toggle) == 'on' }}"
+    then:
+      - service: switch.turn_on
+        target:
+          entity_id: !input heater
+  - if:
+      - condition: template
+        value_template: "{{ states(temperature) | float >= target | float + 0.5 or states(toggle) == 'off' }}"
+    then:
+      - service: switch.turn_off
+        target:
+          entity_id: !input heater
