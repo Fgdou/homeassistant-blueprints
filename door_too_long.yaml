@@ -1,0 +1,35 @@
+blueprint:
+  name: Door Too Long
+  description: TTS when a door is left open for too long
+  domain: automation
+  input:
+    door:
+      name: Door sensor
+      selector:
+        entity:
+          domain: binary_sensor
+    delay:
+      name: Time
+      description: Time left open before tts in minute
+      selector:
+        number:
+          min: 1
+          max: 60
+    name:
+      name: Name
+      description: Name of the door to tts
+      selector:
+        text:
+
+trigger:
+  - platform: state
+    entity_id: !input door
+    to: 'on'
+    for:
+      minutes: !input delay
+variables:
+  name: !input name
+action:
+  - service: script.tts
+    data:
+      message: "La porte {{ name }} est toujours ouverte"
