@@ -134,6 +134,7 @@ action:
         - service: light.turn_on
           target: !input lights
           data:
+            transition: 0.3
             brightness_pct: "{{ brightness }}"
     - conditions:
         - condition: template
@@ -143,6 +144,7 @@ action:
         - service: light.turn_on
           target: !input lights
           data:
+            transition: 0.3
             brightness_pct: "{{ brightness }}"
     - conditions:
         - condition: template
@@ -152,6 +154,7 @@ action:
         - service: light.turn_on
           target: !input lights
           data:
+            transition: 0.3
             brightness_pct: "{{ brightness / 10 }}"
     - conditions:
         - condition: template
@@ -160,6 +163,8 @@ action:
       sequence:
         - service: light.turn_off
           target: !input lights
+          data:
+            transition: 0.3
 
     - conditions:
         - condition: template
@@ -168,6 +173,8 @@ action:
       sequence:
         - service: light.turn_off
           target: !input lights
+          data:
+            transition: 0.3
 
     - conditions:
         - condition: template
@@ -177,6 +184,7 @@ action:
         - service: light.turn_on
           target: !input lights
           data:
+            transition: 0.3
             brightness_pct: "{{ brightness / 10 }}"
     - conditions:
         - condition: template
@@ -185,6 +193,8 @@ action:
       sequence:
         - service: light.turn_off
           target: !input lights
+          data:
+            transition: 0.3
     - conditions:
         - condition: template
           alias: "tv off"
@@ -193,6 +203,7 @@ action:
         - service: light.turn_on
           target: !input lights
           data:
+            transition: 0.3
             brightness_pct: "{{ brightness }}"
     - conditions:
         - condition: template
@@ -202,6 +213,7 @@ action:
         - service: light.turn_on
           target: !input lights
           data:
+            transition: 0.3
             brightness_pct: "{{ brightness }}"
     - conditions:
         - condition: template
@@ -210,3 +222,5 @@ action:
       sequence:
         - service: light.turn_off
           target: !input lights
+          data:
+            transition: 0.3
