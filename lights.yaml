@@ -144,7 +144,7 @@ action:
         - service: light.turn_on
           target: !input lights
           data:
-            transition: 0.3
+            transition: 30
             brightness_pct: "{{ brightness }}"
     - conditions:
         - condition: template
@@ -174,7 +174,7 @@ action:
         - service: light.turn_off
           target: !input lights
           data:
-            transition: 0.3
+            transition: 30
 
     - conditions:
         - condition: template
