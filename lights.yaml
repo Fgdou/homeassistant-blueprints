@@ -83,7 +83,7 @@ variables:
     {% endif %}
   tv_entity: !input tv
   tv_off: "{{ tv_entity == [] or states(tv_entity) == 'unavailable' }}"
-  tv_pause: "{{ tv_entity != [] and states(tv_entity) != 'unavailable' and states(tv_entity) != 'playing' }}"
+  tv_pause: "{{ tv_entity != [] and (states(tv_entity) == 'pause' or states(tv_entity) == 'idle') }}"
   tv_playing: "{{ tv_entity != [] and states(tv_entity) == 'playing' }}"
 
 trigger_variables:
