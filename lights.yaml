@@ -83,7 +83,7 @@ variables:
     {% endif %}
   tv_entity: !input tv
   tv_off: "{{ tv_entity == [] or states(tv_entity) == 'unavailable' }}"
-  tv_pause: "{{ tv_entity != [] and (states(tv_entity) == 'pause' or states(tv_entity) == 'idle') }}"
+  tv_pause: "{{ tv_entity != [] and states(tv_entity) != 'playing' and states(tv_entity) != 'unavailable' }}"
   tv_playing: "{{ tv_entity != [] and states(tv_entity) == 'playing' }}"
 
 trigger_variables:
@@ -116,6 +116,19 @@ trigger:
   - platform: state
     entity_id: !input tv
     id: "tv"
+    from: "unavailable"
+  - platform: state
+    entity_id: !input tv
+    id: "tv"
+    to: "unavailable"
+  - platform: state
+    entity_id: !input tv
+    id: "tv"
+    from: "playing"
+  - platform: state
+    entity_id: !input tv
+    id: "tv"
+    to: "playing"
   - platform: state
     entity_id: !input button_on
     id: "button_on"
