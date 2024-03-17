@@ -31,14 +31,28 @@ trigger:
   - platform: state
     entity_id: !input door
     to: 'on'
+    id: "too_long"
     for:
       minutes: !input delay
   - platform: state
     entity_id: !input main_door
+    id: "main"
     to: 'on'
 variables:
   name: !input name
+condition:
+  - condition: state
+    entity_id: !input door
+    state: 'on'
 action:
+  - if:
+    - alias: "trigger too long"
+      condition: trigger
+      id: "too_long"
+    then:
+      service: notify.notify
+      data:
+        message: "{{ name }} est toujours ouverte"
   - service: script.tts
     data:
       message: "{{ name }} est toujours ouverte"
