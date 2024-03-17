@@ -36,12 +36,14 @@ blueprint:
         entity:
           filter:
             - domain: binary_sensor
-    night:
-      name: Night
-      description: Do not turn on lights during the day
-      default: off
+    lux:
+      name: Lux
+      description: Set a light level where the light turns on and off (0 for always on)
+      default: 0
       selector:
-        boolean:
+        number:
+          min: 0
+          max: 1000
     tv:
       name: Tv
       description: A Tv than control the lights. When the media runs, the lights turns off. When the media pause, the light turns on.
@@ -69,8 +71,8 @@ blueprint:
 
 mode: restart  
 variables:
-  night_enabled: !input night
-  night: "{{ night_enabled != true or states('input_boolean.night') == 'on' }}"
+  lux_value: !input lux
+  night: "{{ lux_value == 0 or states('sensor.xiaomi_lumi_sen_ill_mgl01_illuminance')|int < lux_value }}"
   motion: !input motion_sensor
   lights: !input lights
   door_entity: !input door
@@ -88,6 +90,7 @@ variables:
 
 trigger_variables:
   off_delay: !input off_delay
+  lux_value: !input lux
 
 trigger:
   - platform: state
@@ -109,10 +112,12 @@ trigger:
     for:
       minutes: "{{ off_delay + 1 }}"
     id: "motion_off"
-
-  - platform: state
+  - platform: template
     id: "night"
-    entity_id: input_boolean.night
+    value_template: "{{ states('sensor.xiaomi_lumi_sen_ill_mgl01_illuminance')|int < lux_value - 5 }}"
+  - platform: template
+    id: "night"
+    value_template: "{{ states('sensor.xiaomi_lumi_sen_ill_mgl01_illuminance')|int > lux_value + 5 }}"
   - platform: state
     entity_id: !input tv
     id: "tv"
@@ -136,7 +141,6 @@ trigger:
     entity_id: !input button_off
     id: "button_off"
 
-
 action:
   - choose:
     - conditions:
@@ -152,7 +156,7 @@ action:
     - conditions:
         - condition: template
           alias: "night on"
-          value_template: "{{ trigger.id == 'night' and trigger.to_state.state == 'on' and states(motion) == 'on' and night_enabled == true and door == true and tv_off == true }}"
+          value_template: "{{ trigger.id == 'night' and states(motion) == 'on' and night == true and door == true and tv_off == true }}"
       sequence:
         - service: light.turn_on
           target: !input lights
@@ -182,7 +186,7 @@ action:
     - conditions:
         - condition: template
           alias: "night off"
-          value_template: "{{ trigger.id == 'night' and trigger.to_state.state == 'off' and night_enabled == true }}" 
+          value_template: "{{ trigger.id == 'night' and night == false }}" 
       sequence:
         - service: light.turn_off
           target: !input lights
