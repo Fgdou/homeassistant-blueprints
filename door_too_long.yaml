@@ -20,16 +20,25 @@ blueprint:
       description: Name of the door to tts
       selector:
         text:
-
+    main_door:
+      name: Main door
+      description: Trigger the notification when needed, for example if someone leave the house.
+      selector:
+        entity:
+          domain: binary_sensor
+      default: []
 trigger:
   - platform: state
     entity_id: !input door
     to: 'on'
     for:
       minutes: !input delay
+  - platform: state
+    entity_id: !input main_door
+    to: 'on'
 variables:
   name: !input name
 action:
   - service: script.tts
     data:
-      message: "La porte {{ name }} est toujours ouverte"
+      message: "{{ name }} est toujours ouverte"
