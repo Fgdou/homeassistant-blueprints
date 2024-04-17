@@ -36,6 +36,14 @@ blueprint:
         entity:
           filter:
             - domain: binary_sensor
+    window:
+      name: Window
+      description: If the window is open, dim the lights
+      default: []
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
     lux:
       name: Lux
       description: Set a light level where the light turns on and off (0 for always on)
@@ -77,8 +85,12 @@ variables:
   lights: !input lights
   door_entity: !input door
   door: "{{ door_entity == [] or states(door_entity) == 'on' and (as_timestamp(now()) - as_timestamp(states[door_entity].last_changed)) > 60 }}"
+  window_entity: !input window
+  window: "{{ window_entity != [] and states(window_entity) == 'on' }}"
   brightness: >
-    {% if states.input_boolean.sleep.state == 'off' or states.input_boolean.guest == 'on' %}
+    {% if window == true %}
+      1
+    {% elif states.input_boolean.sleep.state == 'off' or states.input_boolean.guest.state == 'on' %}
       100
     {% else %}
       10
@@ -140,6 +152,9 @@ trigger:
   - platform: state
     entity_id: !input button_off
     id: "button_off"
+  - platform: state
+    entity_id: !input window
+    id: "motion_on"
 
 action:
   - choose:
