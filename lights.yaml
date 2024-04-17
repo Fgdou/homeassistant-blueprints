@@ -81,25 +81,39 @@ mode: restart
 variables:
   lux_value: !input lux
   night: "{{ lux_value == 0 or states('sensor.xiaomi_lumi_sen_ill_mgl01_illuminance')|int < lux_value }}"
-  motion: !input motion_sensor
+  motion_entity: !input motion_sensor
+  motion_time: "{{ as_timestamp(now()) - as_timestamp(states[motion_entity].last_changed) }}"
+  motion: "{{ states(motion_entity) == 'on' or motion_time < (off_delay+1)*60 }}"
+  motion_half: "{{ states(motion_entity) == 'off' and motion_time > off_delay*60 and motion_time < (off_delay+1)*60 }}"
   lights: !input lights
   door_entity: !input door
-  door: "{{ door_entity == [] or states(door_entity) == 'on' and (as_timestamp(now()) - as_timestamp(states[door_entity].last_changed)) > 60 }}"
+  door_open: "{{ door_entity == [] or states(door_entity) == 'on' and (as_timestamp(now()) - as_timestamp(states[door_entity].last_changed)) > 60 }}"
   window_entity: !input window
-  window: "{{ window_entity != [] and states(window_entity) == 'on' }}"
-  brightness: >
-    {% if window == true %}
-      1
-    {% elif states.input_boolean.sleep.state == 'off' or states.input_boolean.guest.state == 'on' %}
-      100
-    {% else %}
-      10
-    {% endif %}
+  window_open: "{{ window_entity != [] and states(window_entity) == 'on' }}"
   tv_entity: !input tv
   tv_off: "{{ tv_entity == [] or states(tv_entity) == 'unavailable' }}"
   tv_pause: "{{ tv_entity != [] and states(tv_entity) != 'playing' and states(tv_entity) != 'unavailable' }}"
   tv_playing: "{{ tv_entity != [] and states(tv_entity) == 'playing' }}"
 
+  sleep: "{{ states.input_boolean.sleep.state == 'on' }}"
+  guest: "{{ states.input_boolean.guest.state == 'on' }}"
+  brightness_semi: >
+    {% if window_open == true %}
+      1
+    {% elif tv_pause == true %}
+      10
+    {% elif sleep == true and guest == false %}
+      10
+    {% else %}
+      100
+    {% endif %}
+  brightness: >
+    {% if motion_half == true %}
+      {{ brightness_semi * 0.1 }}
+    {% else %}
+      {{ brightness_semi }}
+    {% endif %}
+ 
 trigger_variables:
   off_delay: !input off_delay
   lux_value: !input lux
@@ -155,88 +169,12 @@ trigger:
   - platform: state
     entity_id: !input window
     id: "motion_on"
+  - platform: state
+    entity_id: input_boolean.sleep
+    id: "sleep"
 
 action:
   - choose:
-    - conditions:
-        - condition: template
-          alias: "motion on"
-          value_template: "{{ trigger.id == 'motion_on' and night == true and door == true and tv_off == true }}"
-      sequence:
-        - service: light.turn_on
-          target: !input lights
-          data:
-            transition: 0.3
-            brightness_pct: "{{ brightness }}"
-    - conditions:
-        - condition: template
-          alias: "night on"
-          value_template: "{{ trigger.id == 'night' and states(motion) == 'on' and night == true and door == true and tv_off == true }}"
-      sequence:
-        - service: light.turn_on
-          target: !input lights
-          data:
-            transition: 30
-            brightness_pct: "{{ brightness }}"
-    - conditions:
-        - condition: template
-          alias: "motion half off"
-          value_template: "{{ trigger.id == 'motion_half' and door == true and night == true and tv_off == true }}" 
-      sequence:
-        - service: light.turn_on
-          target: !input lights
-          data:
-            transition: 0.3
-            brightness_pct: "{{ brightness / 10 }}"
-    - conditions:
-        - condition: template
-          alias: "motion off"
-          value_template: "{{ trigger.id == 'motion_off' and door == true and tv_off == true }}" 
-      sequence:
-        - service: light.turn_off
-          target: !input lights
-          data:
-            transition: 0.3
-
-    - conditions:
-        - condition: template
-          alias: "night off"
-          value_template: "{{ trigger.id == 'night' and night == false }}" 
-      sequence:
-        - service: light.turn_off
-          target: !input lights
-          data:
-            transition: 30
-
-    - conditions:
-        - condition: template
-          alias: "tv on"
-          value_template: "{{ (trigger.id == 'tv' or trigger.id == 'night') and tv_pause == true and night == true }}"
-      sequence:
-        - service: light.turn_on
-          target: !input lights
-          data:
-            transition: 0.3
-            brightness_pct: "{{ brightness / 10 }}"
-    - conditions:
-        - condition: template
-          alias: "tv playing"
-          value_template: "{{ trigger.id == 'tv' and tv_playing == true }}"
-      sequence:
-        - service: light.turn_off
-          target: !input lights
-          data:
-            transition: 0.3
-    - conditions:
-        - condition: template
-          alias: "tv off"
-          value_template: "{{ trigger.id == 'tv' and tv_off == true and night == true }}"
-      sequence:
-        - service: light.turn_on
-          target: !input lights
-          data:
-            transition: 0.3
-            brightness_pct: "{{ brightness }}"
     - conditions:
         - condition: template
           alias: "button on"
@@ -256,3 +194,25 @@ action:
           target: !input lights
           data:
             transition: 0.3
+   
+    default:
+        - choose:
+          - conditions:
+            - condition: template
+              value_template: "{{ tv_playing == true or night == false or motion == false and door_open == true and tv_off == true }}"
+            sequence:
+              - service: light.turn_off
+                target: !input lights
+                data:
+                  transition: 0.3
+          - conditions:
+            - condition: template
+              value_template: "{{ trigger.id == 'night' and night == true and motion == true or night == true and motion == true and door_open == true and tv_playing == false }}"
+            sequence:
+              - service: light.turn_on
+                target: !input lights
+                data:
+                  transition: 0.3
+                  brightness_pct: "{{ brightness }}"
+
+
