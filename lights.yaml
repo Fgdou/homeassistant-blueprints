@@ -11,7 +11,6 @@ blueprint:
         entity:
           filter:
             - domain: binary_sensor
-            - device_class: motion
     lights:
       name: Lights
       description: The set of lights to turn on and off
@@ -168,7 +167,7 @@ trigger:
     id: "button_off"
   - platform: state
     entity_id: !input window
-    id: "motion_on"
+    id: "window"
   - platform: state
     entity_id: input_boolean.sleep
     id: "sleep"
@@ -199,7 +198,7 @@ action:
         - choose:
           - conditions:
             - condition: template
-              value_template: "{{ tv_playing or not night or not motion and door_open and tv_off }}"
+              value_template: "{{ tv_playing or trigger.id == 'night' and not night or trigger.id == 'motion_off' and door_open and tv_off }}"
             sequence:
               - service: light.turn_off
                 target: !input lights
@@ -207,7 +206,7 @@ action:
                   transition: 0.3
           - conditions:
             - condition: template
-              value_template: "{{ trigger.id == 'night' and night and motion and not sleep or night and motion and door_open and not tv_playing }}"
+              value_template: "{{ trigger.id == 'tv' and not tv_playing or trigger.id in ['night', 'motion_on', 'motion_half', 'window', 'sleep'] and night and motion and door_open and tv_off }}"
             sequence:
               - service: light.turn_on
                 target: !input lights
