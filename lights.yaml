@@ -206,7 +206,7 @@ action:
                   transition: 0.3
           - conditions:
             - condition: template
-              value_template: "{{ trigger.id == 'tv' and not tv_playing and motion or trigger.id in ['window', 'sleep'] and night and tv_off and motion or trigger.id in ['night', 'motion_on', 'motion_half'] and night and motion and door_open and tv_off }}"
+              value_template: "{{ trigger.id == 'tv' and not tv_playing and motion or trigger.id in ['window', 'sleep'] and night and tv_off and motion and not guest or trigger.id in ['night', 'motion_on', 'motion_half'] and night and motion and door_open and tv_off }}"
             sequence:
               - service: light.turn_on
                 target: !input lights
