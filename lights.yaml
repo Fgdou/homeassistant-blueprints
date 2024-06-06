@@ -98,7 +98,7 @@ variables:
   sleep: "{{ states.input_boolean.sleep.state == 'on' }}"
   guest: "{{ states.input_boolean.guest.state == 'on' }}"
   brightness_semi: >
-    {% if window_open %}
+    {% if window_open or lights_off %}
       1
     {% elif tv_pause %}
       10
@@ -202,7 +202,7 @@ action:
         - choose:
           - conditions:
             - condition: template
-              value_template: "{{ tv_playing or trigger.id == 'night' and not night or trigger.id == 'motion_off' and door_open and tv_off or trigger.id == 'lights_off' and lights_off }}"
+              value_template: "{{ tv_playing or trigger.id == 'night' and not night or trigger.id == 'motion_off' and door_open and tv_off }}"
             sequence:
               - service: light.turn_off
                 target: !input lights
@@ -210,7 +210,7 @@ action:
                   transition: 0.3
           - conditions:
             - condition: template
-              value_template: "{{ not lights_off and (trigger.id == 'tv' and not tv_playing and motion and night or trigger.id in ['window', 'sleep', 'lights_off'] and night and tv_off and motion and not guest or trigger.id in ['night', 'motion_on', 'motion_half'] and night and motion and door_open and tv_off) }}"
+              value_template: "{{ trigger.id == 'tv' and not tv_playing and motion and night or trigger.id in ['window', 'sleep', 'lights_off'] and night and tv_off and motion and not guest or trigger.id in ['night', 'motion_on', 'motion_half'] and night and motion and door_open and tv_off }}"
             sequence:
               - service: light.turn_on
                 target: !input lights
