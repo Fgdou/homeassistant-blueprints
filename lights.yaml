@@ -79,6 +79,7 @@ blueprint:
 mode: restart  
 variables:
   lux_value: !input lux
+  lux: "{{ states('sensor.xiaomi_lumi_sen_ill_mgl01_illuminance')|int }}"
   night: "{{ lux_value == 0 or states('sensor.xiaomi_lumi_sen_ill_mgl01_illuminance')|int < lux_value }}"
   motion_entity: !input motion_sensor
   motion_time: "{{ as_timestamp(now()) - as_timestamp(states[motion_entity].last_changed) }}"
@@ -98,12 +99,12 @@ variables:
   sleep: "{{ states.input_boolean.sleep.state == 'on' }}"
   guest: "{{ states.input_boolean.guest.state == 'on' }}"
   brightness_semi: >
-    {% if window_open or lights_off %}
+    {% if window_open or lights_off and lux < 30 %}
       1
     {% elif tv_pause %}
       10
     {% elif sleep and not guest %}
-      10
+      1
     {% else %}
       100
     {% endif %}
