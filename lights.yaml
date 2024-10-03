@@ -79,8 +79,8 @@ blueprint:
 mode: restart  
 variables:
   lux_value: !input lux
-  lux: "{{ states('sensor.xiaomi_lumi_sen_ill_mgl01_illuminance')|int }}"
-  night: "{{ lux_value == 0 or states('sensor.xiaomi_lumi_sen_ill_mgl01_illuminance')|int < lux_value }}"
+  lux: "{{ states('sensor.luminance_illuminance')|int }}"
+  night: "{{ lux_value == 0 or states('sensor.luminance_illuminance')|int < lux_value }}"
   motion_entity: !input motion_sensor
   motion_time: "{{ as_timestamp(now()) - as_timestamp(states[motion_entity].last_changed) }}"
   motion: "{{ states(motion_entity) == 'on' or motion_time < (off_delay+1)*60 }}"
