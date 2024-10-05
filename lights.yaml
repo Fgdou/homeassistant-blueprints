@@ -141,10 +141,10 @@ trigger:
     id: "motion_off"
   - platform: template
     id: "night"
-    value_template: "{{ states('sensor.xiaomi_lumi_sen_ill_mgl01_illuminance')|int < lux_value - 5 }}"
+    value_template: "{{ states('sensor.luminance_illuminance')|int < lux_value - 5 }}"
   - platform: template
     id: "night"
-    value_template: "{{ states('sensor.xiaomi_lumi_sen_ill_mgl01_illuminance')|int > lux_value + 5 }}"
+    value_template: "{{ states('sensor.luminance_illuminance')|int > lux_value + 5 }}"
   - platform: state
     entity_id: !input tv
     id: "tv"
