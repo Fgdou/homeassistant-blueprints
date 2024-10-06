@@ -43,6 +43,12 @@ blueprint:
         entity:
           filter:
             - domain: binary_sensor
+    no_motion_sleep:
+      name: No motion when sleeping
+      description: Deactivate the motion sensor when sleeping, to not turn on the lights by accident
+      default: false
+      selector:
+        boolean:
     lux:
       name: Lux
       description: Set a light level where the light turns on and off (0 for always on)
@@ -98,6 +104,7 @@ variables:
 
   sleep: "{{ states.input_boolean.sleep.state == 'on' }}"
   guest: "{{ states.input_boolean.guest.state == 'on' }}"
+  no_motion_sleep: !input no_motion_sleep
   brightness_semi: >
     {% if window_open or lights_off and lux < 30 %}
       1
@@ -211,7 +218,7 @@ action:
                   transition: 0.3
           - conditions:
             - condition: template
-              value_template: "{{ trigger.id == 'tv' and not tv_playing and motion and night or trigger.id in ['window', 'sleep', 'lights_off'] and night and tv_off and motion and not guest or trigger.id in ['night', 'motion_on', 'motion_half'] and night and motion and door_open and tv_off }}"
+              value_template: "{{ trigger.id == 'tv' and not tv_playing and motion and night or trigger.id in ['window', 'sleep', 'lights_off'] and night and tv_off and motion and not guest or trigger.id in ['night', 'motion_on', 'motion_half'] and night and motion and door_open and tv_off and (not no_motion_sleep or not sleep) }}"
             sequence:
               - service: light.turn_on
                 target: !input lights
