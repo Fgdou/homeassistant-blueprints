@@ -49,6 +49,12 @@ blueprint:
       default: false
       selector:
         boolean:
+    instant_off:
+      name: Instant light off
+      description: Do not fade the light for 1 minute, instantly shut it off
+      default: false
+      selector:
+        boolean:
     lux:
       name: Lux
       description: Set a light level where the light turns on and off (0 for always on)
@@ -124,6 +130,7 @@ variables:
  
 trigger_variables:
   off_delay: !input off_delay
+  instant_off: !input instant_off
   lux_value: !input lux
 
 trigger:
@@ -144,7 +151,8 @@ trigger:
     from: "on"
     to: "off"
     for:
-      minutes: "{{ off_delay + 1 }}"
+      minutes: "{{ off_delay + 1 if not instant_off else 0 }}"
+      seconds: 1
     id: "motion_off"
   - platform: template
     id: "night"
