@@ -95,8 +95,8 @@ variables:
   night: "{{ lux_value == 0 or states('sensor.luminance_illuminance')|int < lux_value }}"
   motion_entity: !input motion_sensor
   motion_time: "{{ as_timestamp(now()) - as_timestamp(states[motion_entity].last_changed) }}"
-  motion: "{{ states(motion_entity) == 'on' or motion_time < (off_delay+1)*60 }}"
-  motion_half: "{{ states(motion_entity) == 'off' and motion_time > off_delay*60 and motion_time < (off_delay+1)*60 }}"
+  motion: "{{ states(motion_entity) == 'on' or motion_time < (off_delay+1)*60 and not instant_off }}"
+  motion_half: "{{ not instant_off and states(motion_entity) == 'off' and motion_time > off_delay*60 and motion_time < (off_delay+1)*60 }}"
   lights: !input lights
   door_entity: !input door
   door_open: "{{ door_entity == [] or states(door_entity) == 'on' and (as_timestamp(now()) - as_timestamp(states[door_entity].last_changed)) > 60 }}"
