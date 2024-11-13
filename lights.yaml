@@ -122,7 +122,7 @@ variables:
       100
     {% endif %}
   brightness: >
-    {% if motion_half %}
+    {% if motion_half and brightness_semi >= 10 %}
       {{ brightness_semi * 0.1 }}
     {% else %}
       {{ brightness_semi }}
