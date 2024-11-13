@@ -103,8 +103,8 @@ variables:
   window_entity: !input window
   window_open: "{{ window_entity != [] and states(window_entity) == 'on' }}"
   tv_entity: !input tv
-  tv_off: "{{ tv_entity == [] or states(tv_entity) == 'off' }}"
-  tv_pause: "{{ tv_entity != [] and states(tv_entity) != 'playing' and states(tv_entity) != 'off' }}"
+  tv_off: "{{ tv_entity == [] or states(tv_entity) == 'unavailable' }}"
+  tv_pause: "{{ tv_entity != [] and states(tv_entity) != 'playing' and states(tv_entity) != 'unavailable' }}"
   tv_playing: "{{ tv_entity != [] and states(tv_entity) == 'playing' }}"
   lights_off: "{{ states('input_boolean.lights_off') == 'on' }}"
 
@@ -163,11 +163,11 @@ trigger:
   - platform: state
     entity_id: !input tv
     id: "tv"
-    from: "off"
+    from: "unavailable"
   - platform: state
     entity_id: !input tv
     id: "tv"
-    to: "off"
+    to: "unavailable"
   - platform: state
     entity_id: !input tv
     id: "tv"
