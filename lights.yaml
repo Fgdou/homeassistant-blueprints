@@ -155,10 +155,10 @@ trigger:
       seconds: 1
     id: "motion_off"
   - platform: template
-    id: "night_on"
+    id: "night"
     value_template: "{{ states('sensor.luminance_illuminance')|int < lux_value - 5 }}"
   - platform: template
-    id: "night_off"
+    id: "night"
     value_template: "{{ states('sensor.luminance_illuminance')|int > lux_value + 5 }}"
   - platform: state
     entity_id: !input tv
@@ -218,7 +218,7 @@ action:
         - choose:
           - conditions:
             - condition: template
-              value_template: "{{ tv_playing or trigger.id == 'night_off' or trigger.id == 'motion_off' and door_open and tv_off }}"
+              value_template: "{{ tv_playing or trigger.id == 'night' and not night or trigger.id == 'motion_off' and door_open and tv_off }}"
             sequence:
               - service: light.turn_off
                 target: !input lights
@@ -226,7 +226,7 @@ action:
                   transition: 0.3
           - conditions:
             - condition: template
-              value_template: "{{ trigger.id == 'tv' and not tv_playing and motion and night or trigger.id in ['window', 'sleep', 'lights_off'] and night and tv_off and motion and not guest or trigger.id in ['night_on', 'motion_on', 'motion_half'] and night and motion and door_open and tv_off and (not no_motion_sleep or not sleep) }}"
+              value_template: "{{ trigger.id == 'tv' and not tv_playing and motion and night or trigger.id in ['window', 'sleep', 'lights_off'] and night and tv_off and motion and not guest or trigger.id in ['night', 'motion_on', 'motion_half'] and night and motion and door_open and tv_off and (not no_motion_sleep or not sleep) }}"
             sequence:
               - service: light.turn_on
                 target: !input lights
