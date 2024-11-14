@@ -172,6 +172,8 @@ trigger:
     entity_id: !input tv
     id: "tv"
     from: "playing"
+    for:
+      seconds: 5
   - platform: state
     entity_id: !input tv
     id: "tv"
