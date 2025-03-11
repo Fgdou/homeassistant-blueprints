@@ -104,8 +104,6 @@ variables:
   window_open: "{{ window_entity != [] and states(window_entity) == 'on' }}"
   tv_entity: !input tv
   tv_off: "{{ tv_entity == [] or states(tv_entity) == 'unavailable' }}"
-  tv_pause: "{{ tv_entity != [] and states(tv_entity) != 'playing' and states(tv_entity) != 'unavailable' }}"
-  tv_playing: "{{ tv_entity != [] and states(tv_entity) == 'playing' }}"
   lights_off: "{{ states('input_boolean.lights_off') == 'on' }}"
 
   sleep: "{{ states.input_boolean.sleep.state == 'on' }}"
@@ -114,7 +112,7 @@ variables:
   brightness_semi: >
     {% if window_open or lights_off and lux < 30 %}
       1
-    {% elif tv_pause %}
+    {% elif not tv_off %}
       10
     {% elif sleep and not guest %}
       1
@@ -169,16 +167,6 @@ trigger:
     id: "tv"
     to: "unavailable"
   - platform: state
-    entity_id: !input tv
-    id: "tv"
-    from: "playing"
-    for:
-      seconds: 5
-  - platform: state
-    entity_id: !input tv
-    id: "tv"
-    to: "playing"
-  - platform: state
     entity_id: !input button_on
     id: "button_on"
   - platform: state
@@ -220,7 +208,7 @@ action:
         - choose:
           - conditions:
             - condition: template
-              value_template: "{{ tv_playing or trigger.id == 'night_off' and not night or trigger.id == 'motion_off' and door_open and tv_off }}"
+              value_template: "{{ trigger.id == 'night_off' and not night or trigger.id == 'motion_off' and door_open }}"
             sequence:
               - service: light.turn_off
                 target: !input lights
@@ -228,7 +216,7 @@ action:
                   transition: 0.3
           - conditions:
             - condition: template
-              value_template: "{{ trigger.id == 'tv' and not tv_playing and motion and night or trigger.id in ['window', 'sleep', 'lights_off'] and night and tv_off and motion and not guest or trigger.id in ['night_on', 'motion_on', 'motion_half'] and night and motion and door_open and tv_off and (not no_motion_sleep or not sleep) }}"
+              value_template: "{{ trigger.id == 'tv' and motion and night or trigger.id in ['window', 'sleep', 'lights_off'] and night and tv_off and motion and not guest or trigger.id in ['night_on', 'motion_on', 'motion_half'] and night and motion and door_open and tv_off and (not no_motion_sleep or not sleep) }}"
             sequence:
               - service: light.turn_on
                 target: !input lights
