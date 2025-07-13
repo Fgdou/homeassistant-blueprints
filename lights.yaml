@@ -18,6 +18,7 @@ blueprint:
         entity:
           filter:
             - domain: light
+          multiple: true
     off_delay:
       name: Off delay
       description: Delay in which to turn off the light after the motion is off
@@ -91,8 +92,10 @@ variables:
   motion_time: "{{ as_timestamp(now()) - as_timestamp(states[motion_entity].last_changed) }}"
   motion: "{{ states(motion_entity) == 'on' or motion_time <= (off_delay+1)*60  }}"
   motion_half: "{{ states(motion_entity) == 'off' and motion_time >= off_delay*60 and motion_time <= (off_delay+1)*60 }}"
-  lights: !input lights
-  light_state: "{{ states(lights) == 'on' }}"
+  raw_lights: !input lights
+  lights: >
+    {{ raw_lights if raw_lights is sequence else [raw_lights] }}
+  light_state: "{{ states(lights[0]) == 'on' }}"
   door_entity: !input door
   door_open: "{{ door_entity == [] or states(door_entity) == 'on' and (as_timestamp(now()) - as_timestamp(states[door_entity].last_changed)) > 60 }}"
   window_entity: !input window
