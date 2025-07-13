@@ -112,7 +112,7 @@ variables:
         {% set namespace.list = namespace.list + [entity] %}
       {% endif %}
     {% endfor %}
-    {{ namespace.list }}
+    {{ namespace.list if namespace.list|length < ligths|length else [] }}
   light_state: "{{ states(lights[0]) == 'on' }}"
   door_entity: !input door
   door_open: "{{ door_entity == [] or states(door_entity) == 'on' and (as_timestamp(now()) - as_timestamp(states[door_entity].last_changed)) > 60 }}"
