@@ -183,12 +183,18 @@ trigger:
   - platform: state
     entity_id: input_boolean.lights_off
     id: "lights_off"
+  - platform: state
+    entity_id: !input lights
+    id: "lights_too_long"
+    to: "on"
+    for:
+      hours: 2
 
 action:
         - choose:
           - conditions:
             - condition: template
-              value_template: "{{ trigger.id == 'night_off' and not night or trigger.id == 'motion_off' and door_open or trigger.id == 'button_off' }}"
+              value_template: "{{ trigger.id == 'night_off' and not night or trigger.id == 'motion_off' and door_open or trigger.id == 'button_off' or trigger.id == 'lights_too_long' }}"
             sequence:
               - service: light.turn_off
                 target: 
