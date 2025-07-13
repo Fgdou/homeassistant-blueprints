@@ -129,25 +129,21 @@ variables:
   always_turn_on: "{{ trigger.id in ['motion_on', 'night_on', 'tv_off'] and motion and night and door_open and tv_off and (not no_motion_sleep or not sleep) or trigger.id == 'button_on' }}"
   update_brightness: "{{ trigger.id in ['window', 'sleep', 'lights_off', 'motion_half', 'tv_on', 'button_on', 'tv_off'] and light_state }}"
   should_turn_on: "{{ always_turn_on or update_brightness }}"
-  brightness_semi: >
+  brightness: >
     {% if trigger.id == 'button_on' and light_state %}
       100
     {% elif window_open or lights_off and lux < 30 or not tv_off or sleep and not guest %}
       1
+    {% elif motion_half %}
+      10
     {% else %}
       100
     {% endif %}
-  brightness: >
-    {% if motion_half and brightness_semi >= 10 %}
-      {{ brightness_semi * 0.1 }}
-    {% else %}
-      {{ brightness_semi }}
-    {% endif %}
   transition: 0.3
   lights_to_turn_on: >
-    {{ lights if brightness == 100 else lights_with_brightness }}
+    {{ lights if brightness > 5 else lights_with_brightness }}
   lights_to_turn_off: >
-    {{ [] if brightness == 100 else lights_without_brightness }}
+    {{ [] if brightness > 5 else lights_without_brightness }}
  
 trigger_variables:
   off_delay: !input off_delay
