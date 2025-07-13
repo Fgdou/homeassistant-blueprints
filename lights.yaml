@@ -15,8 +15,8 @@ blueprint:
       name: Lights
       description: The set of lights to turn on and off
       selector:
-        target:
-          entity:
+        entity:
+          filter:
             - domain: light
     off_delay:
       name: Off delay
@@ -92,6 +92,7 @@ variables:
   motion: "{{ states(motion_entity) == 'on' or motion_time <= (off_delay+1)*60  }}"
   motion_half: "{{ states(motion_entity) == 'off' and motion_time >= off_delay*60 and motion_time <= (off_delay+1)*60 }}"
   lights: !input lights
+  light_state: "{{ states(lights) == 'on' }}"
   door_entity: !input door
   door_open: "{{ door_entity == [] or states(door_entity) == 'on' and (as_timestamp(now()) - as_timestamp(states[door_entity].last_changed)) > 60 }}"
   window_entity: !input window
@@ -103,12 +104,14 @@ variables:
   sleep: "{{ states.input_boolean.sleep.state == 'on' }}"
   guest: "{{ states.input_boolean.guest.state == 'on' }}"
   no_motion_sleep: !input no_motion_sleep
+
+  always_turn_on: "{{ trigger.id in ['motion_on', 'night_on', 'tv_off'] and motion and night and door_open and tv_off and (not no_motion_sleep or not sleep) or trigger.id == 'button_on' }}"
+  update_brightness: "{{ trigger.id in ['window', 'sleep', 'lights_off', 'motion_half', 'tv_on', 'button_on', 'tv_off'] and light_state }}"
+  should_turn_on: "{{ always_turn_on or update_brightness }}"
   brightness_semi: >
-    {% if window_open or lights_off and lux < 30 %}
-      1
-    {% elif not tv_off %}
-      10
-    {% elif sleep and not guest %}
+    {% if trigger.id == 'button_on' and light_state %}
+      100
+    {% elif window_open or lights_off and lux < 30 or not tv_off or sleep and not guest %}
       1
     {% else %}
       100
@@ -118,6 +121,12 @@ variables:
       {{ brightness_semi * 0.1 }}
     {% else %}
       {{ brightness_semi }}
+    {% endif %}
+  transition: >
+    {% if update_brightness %}
+      5
+    {% else %}
+      0.3
     {% endif %}
  
 trigger_variables:
@@ -153,11 +162,11 @@ trigger:
     value_template: "{{ states('sensor.luminance_illuminance')|int > lux_value + 5 }}"
   - platform: state
     entity_id: !input tv
-    id: "tv"
+    id: "tv_on"
     from: "unavailable"
   - platform: state
     entity_id: !input tv
-    id: "tv"
+    id: "tv_off"
     to: "unavailable"
   - platform: state
     entity_id: !input button_on
@@ -176,45 +185,25 @@ trigger:
     id: "lights_off"
 
 action:
-  - choose:
-    - conditions:
-        - condition: template
-          alias: "button on"
-          value_template: "{{ trigger.id == 'button_on' }}"
-      sequence:
-        - service: light.turn_on
-          target: !input lights
-          data:
-            transition: 0.3
-            brightness_pct: "{{ brightness }}"
-    - conditions:
-        - condition: template
-          alias: "button off"
-          value_template: "{{ trigger.id == 'button_off' }}"
-      sequence:
-        - service: light.turn_off
-          target: !input lights
-          data:
-            transition: 0.3
-   
-    default:
         - choose:
           - conditions:
             - condition: template
-              value_template: "{{ trigger.id == 'night_off' and not night or trigger.id == 'motion_off' and door_open }}"
+              value_template: "{{ trigger.id == 'night_off' and not night or trigger.id == 'motion_off' and door_open or trigger.id == 'button_off' }}"
             sequence:
               - service: light.turn_off
-                target: !input lights
+                target: 
+                  entity_id: !input lights
                 data:
                   transition: 0.3
           - conditions:
             - condition: template
-              value_template: "{{ trigger.id == 'tv' and motion and night or trigger.id in ['window', 'sleep', 'lights_off'] and night and tv_off and motion and not guest or trigger.id in ['night_on', 'motion_on', 'motion_half'] and night and motion and door_open and tv_off and (not no_motion_sleep or not sleep) }}"
+              value_template: "{{ should_turn_on }}"
             sequence:
               - service: light.turn_on
-                target: !input lights
+                target: 
+                  entity_id: !input lights
                 data:
-                  transition: 0.3
+                  transition: "{{ transition }}"
                   brightness_pct: "{{ brightness }}"
 
 
