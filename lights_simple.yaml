@@ -1,0 +1,51 @@
+blueprint:
+  name: Simple Lights
+  description: Lights automated based on 1 condition
+  domain: automation
+  input:
+    condition:
+      name: Condition
+      description: Condition that will turn on the lights
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+    lights:
+      name: Lights
+      description: Lights to turn on
+      selector:
+        target:
+          entity:
+            - domain: light
+
+mode: restart
+triggers:
+  - trigger: state
+    entity_id: !input condition
+    to: "on"
+    id: "on"
+  - trigger: state
+    entity_id: !input condition
+    id: "off"
+    from: "on"
+  - trigger: state
+    entity_id: !input condition
+    to: "on"
+    id: "off"
+    for:
+      minutes: 30
+conditions: []
+actions:
+  - if:
+      - condition: trigger
+        id:
+          - "on"
+    then:
+      - action: light.turn_on
+        data:
+          brightness_pct: 100
+        target: !input lights
+    else:
+      - action: light.turn_off
+        target: !input lights
+
