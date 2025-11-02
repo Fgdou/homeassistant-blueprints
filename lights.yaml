@@ -141,9 +141,9 @@ variables:
     {% endif %}
   transition: 0.3
   lights_to_turn_on: >
-    {{ lights if brightness > 5 else lights_with_brightness }}
+    {{ lights if brightness > 15 else lights_with_brightness }}
   lights_to_turn_off: >
-    {{ [] if brightness > 5 else lights_without_brightness }}
+    {{ [] if brightness > 15 else lights_without_brightness }}
  
 trigger_variables:
   off_delay: !input off_delay
@@ -204,7 +204,7 @@ trigger:
     id: "lights_too_long"
     to: "on"
     for:
-      hours: 2
+      hours: 4
 
 action:
         - choose:
