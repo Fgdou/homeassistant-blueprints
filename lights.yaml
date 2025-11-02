@@ -108,11 +108,11 @@ variables:
     {% set namespace = namespace(list=[]) %}
     {% for entity in lights %}
       {% set supported = state_attr(entity, 'supported_features') %}
-      {% if supported is none or (supported | int) < 1 %}
+      {% if not (supported is not none and (supported | int) >= 1) %}
         {% set namespace.list = namespace.list + [entity] %}
       {% endif %}
     {% endfor %}
-    {{ namespace.list if namespace.list|length < ligths|length else [] }}
+    {{ namespace.list if namespace.list|length < lights|length else [] }}
   light_state: "{{ states(lights[0]) == 'on' }}"
   door_entity: !input door
   door_open: "{{ door_entity == [] or states(door_entity) == 'on' and (as_timestamp(now()) - as_timestamp(states[door_entity].last_changed)) > 60 }}"
