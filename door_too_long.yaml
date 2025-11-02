@@ -45,14 +45,7 @@ condition:
     entity_id: !input door
     state: 'on'
 action:
-  - if:
-    - alias: "trigger too long"
-      condition: trigger
-      id: "too_long"
-    then:
-      service: notify.notify
+      service: script.notify
       data:
+        title: "{{ name }} est toujours ouverte"
         message: "{{ name }} est toujours ouverte"
-  - service: script.tts
-    data:
-      message: "{{ name }} est toujours ouverte"
