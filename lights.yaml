@@ -126,8 +126,8 @@ variables:
   guest: "{{ states.input_boolean.guest.state == 'on' }}"
   no_motion_sleep: !input no_motion_sleep
 
-  always_turn_on: "{{ trigger.id in ['motion_on', 'night_on', 'tv_off'] and motion and night and door_open and tv_off and (not no_motion_sleep or not sleep) or trigger.id == 'button_on' }}"
-  update_brightness: "{{ trigger.id in ['window', 'sleep', 'lights_off', 'motion_half', 'tv_on', 'button_on', 'tv_off'] and light_state }}"
+  always_turn_on: "{{ trigger.id in ['motion_on', 'night_on', 'tv_off', 'sleep'] and motion and night and door_open and tv_off and (not no_motion_sleep or not sleep) or trigger.id == 'button_on' }}"
+  update_brightness: "{{ trigger.id in ['window', 'sleep', 'lights_off', 'motion_half', 'button_on', 'tv_off'] and light_state }}"
   should_turn_on: "{{ always_turn_on or update_brightness }}"
   brightness: >
     {% if trigger.id == 'button_on' and light_state %}
@@ -210,7 +210,7 @@ action:
         - choose:
           - conditions:
             - condition: template
-              value_template: "{{ trigger.id == 'night_off' and not night or trigger.id == 'motion_off' and door_open or trigger.id == 'button_off' or trigger.id == 'lights_too_long' }}"
+              value_template: "{{ trigger.id == 'night_off' and not night or trigger.id == 'motion_off' and door_open or trigger.id in ['button_off', 'lights_too_long', 'tv_on'] }}"
             sequence:
               - service: light.turn_off
                 target: 
