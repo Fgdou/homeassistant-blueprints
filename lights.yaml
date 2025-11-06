@@ -204,7 +204,7 @@ trigger:
     id: "lights_too_long"
     to: "on"
     for:
-      hours: 4
+      hours: 8
 
 action:
         - choose:
