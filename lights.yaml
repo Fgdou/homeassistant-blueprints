@@ -172,10 +172,10 @@ trigger:
     id: "motion_off"
   - platform: template
     id: "night_on"
-    value_template: "{{ states('sensor.luminance_illuminance')|int < lux_value - 5 }}"
+    value_template: "{{ states('sensor.luminance_illuminance')|int < lux_value - 20 }}"
   - platform: template
     id: "night_off"
-    value_template: "{{ states('sensor.luminance_illuminance')|int > lux_value + 5 }}"
+    value_template: "{{ states('sensor.luminance_illuminance')|int > lux_value + 20 }}"
   - platform: state
     entity_id: !input tv
     id: "tv_on"
