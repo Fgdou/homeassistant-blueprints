@@ -210,7 +210,7 @@ action:
         - choose:
           - conditions:
             - condition: template
-              value_template: "{{ trigger.id == 'night_off' and not night or trigger.id == 'motion_off' and door_open or trigger.id in ['button_off', 'lights_too_long', 'tv_on'] }}"
+              value_template: "{{ trigger.id == 'night_off' and not night or trigger.id == 'motion_off' and door_open or trigger.id in ['button_off', 'lights_too_long', 'tv_on'] or trigger.id == 'sleep' and no_motion_sleep and sleep }}"
             sequence:
               - service: light.turn_off
                 target: 
