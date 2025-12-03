@@ -83,7 +83,7 @@ blueprint:
           filter:
             - domain: input_button
 
-mode: restart  
+mode: queued
 variables:
   lux_value: !input lux
   lux: "{{ states('sensor.luminance_illuminance')|int }}"
@@ -127,7 +127,7 @@ variables:
   no_motion_sleep: !input no_motion_sleep
 
   always_turn_on: "{{ trigger.id in ['motion_on', 'night_on', 'tv_off', 'sleep'] and motion and night and door_open and tv_off and (not no_motion_sleep or not sleep) or trigger.id == 'button_on' }}"
-  update_brightness: "{{ trigger.id in ['window', 'sleep', 'lights_off', 'motion_half', 'button_on', 'tv_off'] and light_state }}"
+  update_brightness: "{{ trigger.id in ['window', 'lights_off', 'motion_half', 'button_on', 'tv_off'] and light_state or trigger.id == 'sleep' and (sleep and not no_motion_sleep or not sleep) and light_state }}"
   should_turn_on: "{{ always_turn_on or update_brightness }}"
   brightness: >
     {% if trigger.id == 'button_on' and light_state %}
