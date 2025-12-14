@@ -90,8 +90,8 @@ variables:
   night: "{{ lux_value == 0 or states('sensor.luminance_illuminance')|int < lux_value }}"
   motion_entity: !input motion_sensor
   motion_time: "{{ as_timestamp(now()) - as_timestamp(states[motion_entity].last_changed) }}"
-  motion: "{{ states(motion_entity) == 'on' or motion_time <= (off_delay+1)*60  }}"
-  motion_half: "{{ states(motion_entity) == 'off' and motion_time >= off_delay*60 and motion_time <= (off_delay+1)*60 }}"
+  motion: "{{ states(motion_entity) == 'on' or motion_time <= off_delay*60 + 10  }}"
+  motion_half: "{{ states(motion_entity) == 'off' and motion_time >= off_delay*60 and motion_time <= off_delay*60 + 10 }}"
   raw_lights: !input lights
   lights: >
     {{ raw_lights if raw_lights is sequence else [raw_lights] }}
@@ -167,8 +167,7 @@ trigger:
     from: "on"
     to: "off"
     for:
-      minutes: "{{ off_delay + 1 }}"
-      seconds: 1
+      seconds: "{{ off_delay*60 + 11}}"
     id: "motion_off"
   - platform: template
     id: "night_on"
