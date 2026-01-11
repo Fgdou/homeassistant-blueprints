@@ -130,6 +130,7 @@ blueprint:
               min: 0
               max: 35000
               unit_of_measurement: minutes
+          default: 36000
         lux:
           name: Lux
           description: Turns off when lights goes bellow threshold (0 disables the feature)
@@ -142,6 +143,7 @@ mode: queued
 trigger_variables:
   lux: !input lux
   light_sensor_entity: !input light_sensor
+  off_delay: !input off_delay
 
 triggers:
     - platform: state
@@ -202,8 +204,10 @@ triggers:
         minutes: !input force_off_delay
       
 variables:
+  off_delay: !input off_delay
   button_entity: !input button 
   light_sensor: "{{ states(light_sensor_entity)|int }}"
+  lux_value: !input lux
   tv_entity: !input tv
   night: "{{ lux == 0 or light_sensor < lux_value }}"
   motion_entity: !input motion
@@ -236,29 +240,30 @@ variables:
   motion_on: "{{ trigger.id == 'motion' and motion_state_current and not disable_motion and not always_off and night }}"
   motion_off: "{{ trigger.id == 'motion' and not motion and not disable_motion }}"
   motion_dim: "{{ trigger.id == 'motion' and motion_half and not disable_motion }}"
-  force_off: "{{ trigger.id in ['tv','force_off']  and always_off}}"
+  force_off: "{{ trigger.id in ['tv','force_off']  and always_off or trigger.id == 'force_off_delay'}}"
   force_off_on: "{{ trigger.id in ['tv', 'force_off'] and not always_off and not disable_motion and night }}"
   disable_on: "{{ trigger.id == 'disable_motion' and not disable_motion and not always_off and night and motion }}"
   disable_dim: "{{ trigger.id == 'disable_motion' and not disable_motion and not always_off and night }}"
   dim_dim: "{{ trigger.id == 'dim' }}"
   button_on: "{{ button_entity | map('states') | select('eq','on') | list | count > 0 }}"
+  button_force_on: "{{ lights_state and button_on }}"
   button_off: "{{ button_entity | map('states') | select('eq','off') | list | count > 0 }}"
 
   dim_state: "{{ dim or motion_half }}"
   should_dim: "{{ (dim_dim or disable_dim or motion_dim or button_on) and lights_state }}"
   should_on: "{{ (night_on or motion_on or force_off_on or disable_on or button_on) and not lights_state }}"
   should_off: "{{ (night_off or motion_off or force_off or button_off) and lights_state }}"
-  full_lights_on: "{{ should_on and not dim_state or should_dim and not dim_state }}"
-  full_lights_off: "{{ should_off or should_dim and dim_state }}"
-  dim_lights_on: "{{ should_on or should_dim }}"
+  full_lights_on: "{{ (should_on and not dim_state or should_dim and not dim_state or button_force_on) and not should_off }}"
+  full_lights_off: "{{ should_off or should_dim and dim_state and not button_force_on }}"
+  dim_lights_on: "{{ (should_on or should_dim) and not should_off }}"
   dim_lights_off: "{{ should_off }}"
-  dim_lights_brightness: "{{ lights_dim_brightness if dim_state else lights_full_brightness }}"
-  full_lights_brightness: "{{ lights_full_brightness }}"
+  dim_lights_brightness: "{{ (lights_dim_brightness if dim_state else lights_full_brightness) if not button_force_on else 100 }}"
+  full_lights_brightness: "{{ lights_full_brightness if not button_force_on else 100 }}"
 
 actions:
   - if:
     - condition: template
-      value_template: "{{ full_lights_on }}"
+      value_template: "{{ full_lights_on and lights_full != [] }}"
     then:
       - service: light.turn_on
         target:
@@ -268,7 +273,7 @@ actions:
           brightness_pct: "{{ full_lights_brightness }}"
   - if:
     - condition: template
-      value_template: "{{ full_lights_off }}"
+      value_template: "{{ full_lights_off and lights_full != []}}"
     then:
       - service: light.turn_off
         target:
@@ -277,7 +282,7 @@ actions:
           transition: 0.3
   - if:
     - condition: template
-      value_template: "{{ dim_lights_on }}"
+      value_template: "{{ dim_lights_on and lights_dim != [] }}"
     then:
       - service: light.turn_on
         target:
@@ -287,7 +292,7 @@ actions:
           brightness_pct: "{{ dim_lights_brightness }}"
   - if:
     - condition: template
-      value_template: "{{ dim_lights_off }}"
+      value_template: "{{ dim_lights_off and lights_dim != [] }}"
     then:
       - service: light.turn_off
         target:
