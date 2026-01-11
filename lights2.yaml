@@ -128,7 +128,7 @@ blueprint:
           selector:
             number:
               min: 0
-              max: 35000
+              max: 36000
               unit_of_measurement: minutes
           default: 36000
         lux:
@@ -167,10 +167,10 @@ triggers:
       id: motion
     - platform: template
       id: "night"
-      value_template: "{{ states(light_sensor_entity)|int < lux - 10 }}"
+      value_template: "{{ states(light_sensor_entity)|int < lux - 10 if light_sensor_entity != [] else false}}"
     - platform: template
       id: "night"
-      value_template: "{{ states(light_sensor_entity)|int > lux + 10 }}"
+      value_template: "{{ states(light_sensor_entity)|int > lux + 10 if light_sensor_entity != [] else false }}"
     - platform: state
       entity_id: !input tv
       id: "tv"
@@ -206,7 +206,7 @@ triggers:
 variables:
   off_delay: !input off_delay
   button_entity: !input button 
-  light_sensor: "{{ states(light_sensor_entity)|int }}"
+  light_sensor: "{{ states(light_sensor_entity)|int if light_sensor_entity != [] else 0 }}"
   lux_value: !input lux
   tv_entity: !input tv
   night: "{{ lux == 0 or light_sensor < lux_value }}"
@@ -223,8 +223,8 @@ variables:
   motion_half: "{{ not motion_state_current and motion_time >= off_delay*60 and motion_time <= off_delay*60+10 }}"
   lights_full: !input lights_full
   lights_dim: !input lights_dim
-  all_lights: "{{lights_full + lights_dim}}"
-  lights_state: "{{ lights_full|length > 0 and (all_lights | map('states') | select('eq','on') | list | count > 0) }}"
+  all_lights: "{{ lights_full + lights_dim}}"
+  lights_state: "{{ all_lights|length > 0 and (all_lights | map('states') | select('eq','on') | list | count > 0) }}"
   always_off_entity: !input force_off
   tv: "{{ tv_entity != [] and states(tv_entity) != 'unavailable' }}"
   always_off: "{{ tv or always_off_entity != [] and always_off_entity | map('states') | select('eq','on') | list | count > 0 }}"
