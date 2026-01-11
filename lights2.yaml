@@ -202,6 +202,7 @@ triggers:
         minutes: !input force_off_delay
       
 variables:
+  button_entity: !input button 
   light_sensor: "{{ states(light_sensor_entity)|int }}"
   tv_entity: !input tv
   night: "{{ lux == 0 or light_sensor < lux_value }}"
@@ -240,12 +241,14 @@ variables:
   disable_on: "{{ trigger.id == 'disable_motion' and not disable_motion and not always_off and night and motion }}"
   disable_dim: "{{ trigger.id == 'disable_motion' and not disable_motion and not always_off and night }}"
   dim_dim: "{{ trigger.id == 'dim' }}"
+  button_on: "{{ button_entity | map('states') | select('eq','on') | list | count > 0 }}"
+  button_off: "{{ button_entity | map('states') | select('eq','off') | list | count > 0 }}"
 
   dim_state: "{{ dim or motion_half }}"
-  should_dim: "{{ (dim_dim or disable_dim or motion_dim) and lights_state }}"
-  should_on: "{{ (night_on or motion_on or force_off_on or disable_on) and not lights_state }}"
-  should_off: "{{ (night_off or motion_off or force_off) and lights_state }}"
-  full_lights_on: "{{ should_on or should_dim and not dim_state }}"
+  should_dim: "{{ (dim_dim or disable_dim or motion_dim or button_on) and lights_state }}"
+  should_on: "{{ (night_on or motion_on or force_off_on or disable_on or button_on) and not lights_state }}"
+  should_off: "{{ (night_off or motion_off or force_off or button_off) and lights_state }}"
+  full_lights_on: "{{ should_on and not dim_state or should_dim and not dim_state }}"
   full_lights_off: "{{ should_off or should_dim and dim_state }}"
   dim_lights_on: "{{ should_on or should_dim }}"
   dim_lights_off: "{{ should_off }}"
