@@ -196,6 +196,13 @@ triggers:
     - platform: state
       entity_id: !input disable_motion
       id: "disable_motion"
+      to: "on"
+    - platform: state
+      entity_id: !input disable_motion
+      id: "disable_motion"
+      to: "off"
+      for:
+        seconds: 60
     - platform: state
       entity_id: !input lights_full
       id: "too_long"
@@ -231,7 +238,13 @@ variables:
   dim_entity: !input dim
   dim: "{{ dim_entity != [] and dim_entity | map('states') | select('eq','on') | list | count > 0 }}"
   disable_motion_entity: !input disable_motion
-  disable_motion: "{{ disable_motion_entity != [] and disable_motion_entity | map('states') | select('eq','on') | list | count > 0 }}"
+  disable_last_time: >
+    {% set ns = namespace(times=[]) %}
+    {% for sensor in disable_motion_entity %}
+      {% set ns.times = ns.times + [states[sensor].last_changed | as_timestamp] %}
+    {% endfor %}
+    {{ (ns.times | max) if disable_motion_entity != [] else 0 }}
+  disable_motion: "{{ disable_motion_entity != [] and (disable_motion_entity | map('states') | select('eq','on') | list | count > 0 or as_timestamp(now()) - disable_last_time <= 60) }}"
   lights_full_brightness: !input brightness_light_full
   lights_dim_brightness: !input brightness_light_dim
 
@@ -244,6 +257,7 @@ variables:
   force_off_on: "{{ trigger.id in ['tv', 'force_off'] and not always_off and not disable_motion and night }}"
   disable_on: "{{ trigger.id == 'disable_motion' and not disable_motion and not always_off and night and motion }}"
   disable_dim: "{{ trigger.id == 'disable_motion' and not disable_motion and not always_off and night }}"
+  disable_off: "{{ trigger.id == 'disable_motion' and not disable_motion and not motion }}"
   dim_dim: "{{ trigger.id == 'dim' }}"
   button_on: "{{ button_entity | map('states') | select('eq','on') | list | count > 0 }}"
   button_force_on: "{{ lights_state and button_on }}"
@@ -252,7 +266,7 @@ variables:
   dim_state: "{{ dim or motion_half }}"
   should_dim: "{{ (dim_dim or disable_dim or motion_dim or button_on) and lights_state }}"
   should_on: "{{ (night_on or motion_on or force_off_on or disable_on or button_on) and not lights_state }}"
-  should_off: "{{ (night_off or motion_off or force_off or button_off) and lights_state }}"
+  should_off: "{{ (night_off or motion_off or force_off or button_off or disable_off) and lights_state }}"
   full_lights_on: "{{ (should_on and not dim_state or should_dim and not dim_state or button_force_on) and not should_off }}"
   full_lights_off: "{{ should_off or should_dim and dim_state and not button_force_on }}"
   dim_lights_on: "{{ (should_on or should_dim) and not should_off }}"
