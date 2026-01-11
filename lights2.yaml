@@ -1,0 +1,294 @@
+blueprint:
+  name: Motion Lights 2
+  description: "Turn on and off lights, based on conditions"
+  domain: automation
+
+  input:
+    sensors:
+      name: Sensors
+      input:
+        light_sensor:
+          name: Light Sensor
+          description: Get the light intensity based on the sun
+          selector:
+            entity:
+              filter:
+                - domain: sensor
+          default: []
+        motion:
+          name: Motion sensor
+          description: Turn on the lights on motion
+          selector:
+            entity:
+              filter:
+                - domain: binary_sensor
+              multiple: true
+        button:
+          name: Button
+          description: Controls and override the lights
+          selector:
+            entity:
+              filter:
+                - domain: sensor
+              multiple: true
+          default: []
+    conditions:
+      name: Conditions
+      input:
+        disable_motion:
+          name: Disable Motion
+          description: Keeps the light on / off
+          selector:
+            entity:
+              filter:
+                - domain: 
+                  - binary_sensor
+                  - input_boolean
+              multiple: true
+          default: []
+        dim:
+          name: Dim the light
+          description: Lower light for mosquittos
+          selector:
+            entity:
+              filter:
+                - domain: 
+                  - binary_sensor
+                  - input_boolean
+              multiple: true
+          default: []
+        force_off:
+          name: Force off
+          description: Will always be off
+          selector:
+            entity:
+              filter:
+                - domain: 
+                  - binary_sensor
+                  - input_boolean
+              multiple: true
+          default: []
+        tv:
+          name: TV
+          description: Turns off when android TV is on
+          selector:
+            entity:
+              filter:
+                - domain: media_player
+          default: []
+    parameters:
+      name: Parameters
+      input:
+        lights_full:
+          name: Lights
+          description: Lights that turns on at 100% brightness
+          selector:
+            entity:
+              filter:
+                - domain: light
+              multiple: true
+          default: []
+        brightness_light_full:
+          name: Brightness Light
+          description: Brightness when lights should turn on
+          selector:
+            number:
+              min: 1
+              max: 100
+          default: 100
+        lights_dim:
+          name: Lights Night
+          description: Lights that can be dimmed when required. Lights present here do not have to be included in the other list.
+          selector:
+            entity:
+              filter:
+                - domain: light
+              multiple: true
+          default: []
+        brightness_light_dim:
+          name: Brightness Light
+          description: Brightness of the dim lights
+          selector:
+            number:
+              min: 1
+              max: 100
+          default: 10
+        off_delay:
+          name: Off Delay
+          description: Time for the light to dim, then 10 seconds later turns off
+          selector:
+            number:
+              min: 0
+              max: 60
+              unit_of_measurement: minutes
+          default: 0
+        force_off_delay:
+          name: Force off delay
+          description: Turns off if something goes wrong
+          selector:
+            number:
+              min: 0
+              max: 35000
+              unit_of_measurement: minutes
+        lux:
+          name: Lux
+          description: Turns off when lights goes bellow threshold (0 disables the feature)
+          default: 0
+          selector:
+            number:
+              min: 0
+              max: 5000
+mode: queued
+trigger_variables:
+  lux: !input lux
+  light_sensor_entity: !input light_sensor
+
+triggers:
+    - platform: state
+      entity_id: !input motion
+      from: "off"
+      to: "on"
+      id: motion
+    - platform: state
+      entity_id: !input motion
+      from: "on"
+      to: "off"
+      for:
+        minutes: !input off_delay
+      id: motion
+    - platform: state
+      entity_id: !input motion
+      from: "on"
+      to: "off"
+      for:
+        seconds: "{{ off_delay*60 + 10  }}"
+      id: motion
+    - platform: template
+      id: "night"
+      value_template: "{{ states(light_sensor_entity)|int < lux - 10 }}"
+    - platform: template
+      id: "night"
+      value_template: "{{ states(light_sensor_entity)|int > lux + 10 }}"
+    - platform: state
+      entity_id: !input tv
+      id: "tv"
+      from: "unavailable"
+    - platform: state
+      entity_id: !input tv
+      id: "tv"
+      to: "unavailable"
+    - platform: state
+      entity_id: !input button
+      id: "button_on"
+      to: "on"
+    - platform: state
+      entity_id: !input button
+      id: "button_off"
+      to: "off"
+    - platform: state
+      entity_id: !input dim
+      id: "dim"
+    - platform: state
+      entity_id: !input force_off
+      id: "force_off"
+    - platform: state
+      entity_id: !input disable_motion
+      id: "disable_motion"
+    - platform: state
+      entity_id: !input lights_full
+      id: "too_long"
+      to: "on"
+      for:
+        minutes: !input force_off_delay
+      
+variables:
+  light_sensor: "{{ states(light_sensor_entity)|int }}"
+  tv_entity: !input tv
+  night: "{{ lux == 0 or light_sensor < lux_value }}"
+  motion_entity: !input motion
+  motion_state_current: "{{ motion_entity | map('states') | select('eq','on') | list | count > 0 }}"
+  motion_last_time_on: >
+    {% set ns = namespace(times=[]) %}
+    {% for sensor in motion_entity %}
+      {% set ns.times = ns.times + [states[sensor].last_changed | as_timestamp] %}
+    {% endfor %}
+    {{ ns.times | max }}
+  motion_time: "{{ as_timestamp(now()) - motion_last_time_on }}"
+  motion: "{{ motion_state_current or motion_time <= off_delay*60 + 10 }}"
+  motion_half: "{{ not motion_state_current and motion_time >= off_delay*60 and motion_time <= off_delay*60+10 }}"
+  lights_full: !input lights_full
+  lights_dim: !input lights_dim
+  all_lights: "{{lights_full + lights_dim}}"
+  lights_state: "{{ lights_full|length > 0 and (all_lights | map('states') | select('eq','on') | list | count > 0) }}"
+  always_off_entity: !input force_off
+  tv: "{{ tv_entity != [] and states(tv_entity) != 'unavailable' }}"
+  always_off: "{{ tv or always_off_entity != [] and always_off_entity | map('states') | select('eq','on') | list | count > 0 }}"
+  dim_entity: !input dim
+  dim: "{{ dim_entity != [] and dim_entity | map('states') | select('eq','on') | list | count > 0 }}"
+  disable_motion_entity: !input disable_motion
+  disable_motion: "{{ disable_motion_entity != [] and disable_motion_entity | map('states') | select('eq','on') | list | count > 0 }}"
+  lights_full_brightness: !input brightness_light_full
+  lights_dim_brightness: !input brightness_light_dim
+
+  night_on: "{{ trigger.id == 'night' and night and motion and not always_off }}"
+  night_off: "{{ trigger.id == 'night' and not night }}"
+  motion_on: "{{ trigger.id == 'motion' and motion_state_current and not disable_motion and not always_off and night }}"
+  motion_off: "{{ trigger.id == 'motion' and not motion and not disable_motion }}"
+  motion_dim: "{{ trigger.id == 'motion' and motion_half and not disable_motion }}"
+  force_off: "{{ trigger.id in ['tv','force_off']  and always_off}}"
+  force_off_on: "{{ trigger.id in ['tv', 'force_off'] and not always_off and not disable_motion and night }}"
+  disable_on: "{{ trigger.id == 'disable_motion' and not disable_motion and not always_off and night and motion }}"
+  disable_dim: "{{ trigger.id == 'disable_motion' and not disable_motion and not always_off and night }}"
+  dim_dim: "{{ trigger.id == 'dim' }}"
+
+  dim_state: "{{ dim or motion_half }}"
+  should_dim: "{{ (dim_dim or disable_dim or motion_dim) and lights_state }}"
+  should_on: "{{ (night_on or motion_on or force_off_on or disable_on) and not lights_state }}"
+  should_off: "{{ (night_off or motion_off or force_off) and lights_state }}"
+  full_lights_on: "{{ should_on or should_dim and not dim_state }}"
+  full_lights_off: "{{ should_off or should_dim and dim_state }}"
+  dim_lights_on: "{{ should_on or should_dim }}"
+  dim_lights_off: "{{ should_off }}"
+  dim_lights_brightness: "{{ lights_dim_brightness if dim_state else lights_full_brightness }}"
+  full_lights_brightness: "{{ lights_full_brightness }}"
+
+actions:
+  - if:
+    - condition: template
+      value_template: "{{ full_lights_on }}"
+    then:
+      - service: light.turn_on
+        target:
+          entity_id: !input lights_full
+        data:
+          transition: 0.3
+          brightness_pct: "{{ full_lights_brightness }}"
+  - if:
+    - condition: template
+      value_template: "{{ full_lights_off }}"
+    then:
+      - service: light.turn_off
+        target:
+          entity_id: !input lights_full
+        data:
+          transition: 0.3
+  - if:
+    - condition: template
+      value_template: "{{ dim_lights_on }}"
+    then:
+      - service: light.turn_on
+        target:
+          entity_id: !input lights_dim
+        data:
+          transition: 0.3
+          brightness_pct: "{{ dim_lights_brightness }}"
+  - if:
+    - condition: template
+      value_template: "{{ dim_lights_off }}"
+    then:
+      - service: light.turn_off
+        target:
+          entity_id: !input lights_dim
+        data:
+          transition: 0.3
+
