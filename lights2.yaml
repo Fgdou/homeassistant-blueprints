@@ -4,8 +4,48 @@ blueprint:
   domain: automation
 
   input:
+    lights:
+      name: Lights
+      icon: "mdi:lightbulb"
+      input:
+        lights_full:
+          name: Lights
+          description: Lights that turns on at 100% brightness
+          selector:
+            entity:
+              filter:
+                - domain: light
+              multiple: true
+          default: []
+        brightness_light_full:
+          name: Brightness Light
+          description: Brightness when lights should turn on
+          selector:
+            number:
+              min: 1
+              max: 100
+          default: 100
+        lights_dim:
+          name: Lights Night
+          description: Lights that can be dimmed when required. Lights present here do not have to be included in the other list.
+          selector:
+            entity:
+              filter:
+                - domain: light
+              multiple: true
+          default: []
+        brightness_light_dim:
+          name: Brightness Light
+          description: Brightness of the dim lights
+          selector:
+            number:
+              min: 1
+              max: 100
+          default: 10
+
     sensors:
       name: Sensors
+      icon: "mdi:motion-sensor"
       input:
         light_sensor:
           name: Light Sensor
@@ -34,6 +74,7 @@ blueprint:
           default: []
     conditions:
       name: Conditions
+      icon: "mdi:call-split"
       input:
         disable_motion:
           name: Disable Motion
@@ -78,41 +119,8 @@ blueprint:
           default: []
     parameters:
       name: Parameters
+      icon: "mdi:cog"
       input:
-        lights_full:
-          name: Lights
-          description: Lights that turns on at 100% brightness
-          selector:
-            entity:
-              filter:
-                - domain: light
-              multiple: true
-          default: []
-        brightness_light_full:
-          name: Brightness Light
-          description: Brightness when lights should turn on
-          selector:
-            number:
-              min: 1
-              max: 100
-          default: 100
-        lights_dim:
-          name: Lights Night
-          description: Lights that can be dimmed when required. Lights present here do not have to be included in the other list.
-          selector:
-            entity:
-              filter:
-                - domain: light
-              multiple: true
-          default: []
-        brightness_light_dim:
-          name: Brightness Light
-          description: Brightness of the dim lights
-          selector:
-            number:
-              min: 1
-              max: 100
-          default: 10
         off_delay:
           name: Off Delay
           description: Time for the light to dim, then 10 seconds later turns off
@@ -254,7 +262,7 @@ variables:
   motion_off: "{{ trigger.id == 'motion' and not motion and not disable_motion }}"
   motion_dim: "{{ trigger.id == 'motion' and motion_half and not disable_motion }}"
   force_off: "{{ trigger.id in ['tv','force_off']  and always_off or trigger.id == 'force_off_delay'}}"
-  force_off_on: "{{ trigger.id in ['tv', 'force_off'] and not always_off and not disable_motion and night }}"
+  force_off_on: "{{ trigger.id in ['tv', 'force_off'] and not always_off and not disable_motion and night and motion }}"
   disable_on: "{{ trigger.id == 'disable_motion' and not disable_motion and not always_off and night and motion }}"
   disable_dim: "{{ trigger.id == 'disable_motion' and not disable_motion and not always_off and night }}"
   disable_off: "{{ trigger.id == 'disable_motion' and not disable_motion and not motion }}"
