@@ -274,7 +274,7 @@ variables:
   dim_state: "{{ dim or motion_half }}"
   should_dim: "{{ (dim_dim or disable_dim or motion_dim or button_on) and lights_state }}"
   should_on: "{{ (night_on or motion_on or force_off_on or disable_on or button_on) and not lights_state }}"
-  should_off: "{{ (night_off or motion_off or force_off or button_off or disable_off) and lights_state }}"
+  should_off: "{{ (night_off or motion_off or force_off or button_off or disable_off) }}"
   full_lights_on: "{{ (should_on and not dim_state or should_dim and not dim_state or button_force_on) and not should_off }}"
   full_lights_off: "{{ should_off or should_dim and dim_state and not button_force_on }}"
   dim_lights_on: "{{ (should_on or should_dim) and not should_off }}"
